@@ -27,6 +27,8 @@
         }
       }
     </style>
+    
+    {% load crispy_forms_tags %}
 
     
   </head>
@@ -45,13 +47,20 @@
       <div class="container-fluid py-5">
         <h1 class="display-5 fw-bold">Sentiment Analysis for Twitter</h1>
         <p class="col-md-8 fs-4">This tool features a NLP based unified sentiment analysis by the model which is pre-trained on millions of tweets in over thirty languages.</p>
-        <form action="/results.html" method="post">
-          <div class="input-group mb-3 w-25">
-            <span class="input-group-text" id="basic-addon1">@</span>
-            <input type="text" id="username" name="username" class="form-control" placeholder="Username" aria-label="Username" aria-describedby="basic-addon1">
-          </div>
-          <button   class="btn btn-primary btn-lg" type="submit">Try it now</button>
+        <form action="/" method="post" class="w-25 mb-3">
+        {% csrf_token %}
+        {{ form|crispy }}
+        
+          {% if form_disable is not True %}
+            <button class="btn btn-primary btn-lg mt-3" type="submit">Try it now</button>
+          {% endif %}
         </form>
+        
+        <ul>
+          {% for tweet in tweets %}
+              <li>{{ tweet.tweet_body }}</li>
+          {% endfor %}
+        </ul>
       </div>
     </div>
 
