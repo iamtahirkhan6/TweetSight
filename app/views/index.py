@@ -16,7 +16,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # Model Settings
 CUDA = False # set to true if using GPU (Runtime -> Change runtime Type -> GPU)
 BATCH_SIZE = 32
-MODEL = "cardiffnlp/twitter-xlm-roberta-base-sentiment"
+MODEL = "/usr/src/app/app/twitter-xlm-roberta-base-sentiment"
 tokenizer = AutoTokenizer.from_pretrained(MODEL, use_fast=True, local_files_only=True, model_max_length=512, use_auth_token=True)
 config = AutoConfig.from_pretrained(MODEL, local_files_only=True, use_auth_token=True) # used for id to label name
 model = AutoModelForSequenceClassification.from_pretrained(MODEL, local_files_only=True, use_auth_token=True)
