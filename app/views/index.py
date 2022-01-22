@@ -61,6 +61,8 @@ def download_tweets(dir, username):
     tweets = Twitter(str(username)).get_tweets(pages=1).to_dict()
     tweets = tweets['tweets'][0]['result']['tweets']
     tweets = [tweet for tweet in tweets if "https://t.co" not in tweet['tweet_body']]
+    tweets = tweets[:-1]
+    tweets = list(filter(None, tweets))
     
     import pandas as pd
     tweet_series = pd.Series(tweet['tweet_body'] for tweet in tweets)
@@ -100,6 +102,7 @@ def forward(text, cuda=True):
 def sentiment_analysis(dataset_path):
     dataset = open(dataset_path, encoding = 'utf-8').read().split('\n')
     dataset = dataset[:-1]
+    dataset = list(filter(None, dataset))
     dl = DataLoader(dataset, batch_size=BATCH_SIZE)
     all_preds = []
     for idx,batch in enumerate(dl):
