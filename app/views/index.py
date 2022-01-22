@@ -1,15 +1,28 @@
-from django.shortcuts import render
-from django.http import HttpResponseRedirect
-from app.forms import RunToolForm
-
 import os
-import numpy as np
-from scipy.special import softmax
-from torch.utils.data import DataLoader
-from transformers import AutoModelForSequenceClassification
-from transformers import AutoTokenizer, AutoModel, AutoConfig
-from social_scraper import PlatformFactory, SearchQuery, PlatformEnumeration
 import datetime
+import numpy as np
+from app.forms import RunToolForm
+from scipy.special import softmax
+from django.shortcuts import render
+from torch.utils.data import DataLoader
+from django.http import HttpResponseRedirect
+from transformers import AutoTokenizer, AutoModel, AutoConfig, AutoModelForSequenceClassification
+from social_scraper import PlatformFactory, SearchQuery, PlatformEnumeration
+
+# Global Variables
+from pathlib import Path
+BASE_DIR = Path(__file__).resolve().parent.parent
+
+# Model Settings
+CUDA = False # set to true if using GPU (Runtime -> Change runtime Type -> GPU)
+BATCH_SIZE = 32
+MODEL = "cardiffnlp/twitter-xlm-roberta-base-sentiment"
+tokenizer = AutoTokenizer.from_pretrained(MODEL, use_fast=True, local_files_only=True, model_max_length=512)
+config = AutoConfig.from_pretrained(MODEL, local_files_only=True) # used for id to label name
+model = AutoModelForSequenceClassification.from_pretrained(MODEL, local_files_only=True)
+if CUDA:
+    model = model.to('cuda')
+_ = model.eval()
 
 # Index
 def index(request):
@@ -20,19 +33,20 @@ def index(request):
         # check whether it's valid:
         if form.is_valid():
             form_disable = True
-            from pathlib import Path
-
+            
             # Build paths inside the project like this: BASE_DIR / 'subdir'.
-            BASE_DIR = Path(__file__).resolve().parent.parent
             main_directory = os.path.join(BASE_DIR, 'tweets')
             
             # Download Tweets
             form_data = form.cleaned_data
             username = form_data['username']
+            username_txt = main_directory + "/" + username + ".txt"
             
             tweets = download_tweets(main_directory, username)
+
+            results = sentiment_analysis(username_txt)
             
-            return render(request,'index.html', {'form_data': form.cleaned_data, 'form_disable': form_disable, 'main_directory': username, 'tweets': tweets})
+            return render(request,'index.html', {'form_data': form.cleaned_data, 'form_disable': form_disable, 'main_directory': username, 'tweets': tweets, 'results': results})
 
     # if a GET (or any other method) we'll create a blank form
     else:
@@ -40,16 +54,11 @@ def index(request):
 
     return render(request, 'index.html', {'form': form})
     
-# def index(request):
-#     context = {}
-#     context['form']= RunToolForm()
-#     return render(request, "index.html", context)
-   
 def download_tweets(dir, username):
     os.chdir(dir)
-
+    
     from tweety.bot import Twitter
-    tweets = Twitter("elonmusk").get_tweets(pages=1).to_dict()
+    tweets = Twitter(str(username)).get_tweets(pages=1).to_dict()
     tweets = tweets['tweets'][0]['result']['tweets']
     tweets = [tweet for tweet in tweets if "https://t.co" not in tweet['tweet_body']]
     
@@ -62,9 +71,6 @@ def download_tweets(dir, username):
     
     return tweets
     
-def csv_to_tex(csv_file):
-    return
-    
 def preprocess(corpus):
   outcorpus = []
   for text in corpus:
@@ -76,3 +82,38 @@ def preprocess(corpus):
     new_text = " ".join(new_text)
     outcorpus.append(new_text)
   return outcorpus
+  
+def forward(text, cuda=True):
+  text = preprocess(text)
+  encoded_input = tokenizer(text, return_tensors='pt', padding=True, truncation=True)
+  if cuda:
+    encoded_input.to('cuda')
+    output = model(**encoded_input)
+    scores = output[0].detach().cpu().numpy()
+  else:
+    output = model(**encoded_input)
+    scores = output[0].detach().numpy()
+  
+  scores = softmax(scores, axis=-1)
+  return scores
+  
+def sentiment_analysis(dataset_path):
+    dataset = open(dataset_path, encoding = 'utf-8').read().split('\n')
+    dataset = dataset[:-1]
+    dl = DataLoader(dataset, batch_size=BATCH_SIZE)
+    all_preds = []
+    for idx,batch in enumerate(dl):
+        # print('Batch ', idx+1, ' of ', len(dl))
+        text = preprocess(batch)
+        scores = forward(text, cuda=CUDA)
+        preds = np.argmax(scores, axis=-1)
+        all_preds.extend(preds)
+        
+    results = []
+    
+    for index, tweet in enumerate(dataset):
+      pred = all_preds[index]
+      result = {'text': tweet, 'output': config.id2label[pred]}
+      results.append(result)
+      
+    return results

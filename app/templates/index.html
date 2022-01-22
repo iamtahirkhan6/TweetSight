@@ -44,9 +44,13 @@
     </header>
 
     <div class="p-5 mb-4 bg-light rounded-3">
-      <div class="container-fluid py-5">
+      <div class="container-fluid{% if not results %} py-5{% endif %}">
         <h1 class="display-5 fw-bold">Sentiment Analysis for Twitter</h1>
-        <p class="col-md-8 fs-4">This tool features a NLP based unified sentiment analysis by the model which is pre-trained on millions of tweets in over thirty languages.</p>
+        {% if not results %}
+          <p class="col-md-8 fs-4 text-muted">This tool features a NLP based unified sentiment analysis by the model which is pre-trained on millions of tweets in over thirty languages.</p>
+        {% else %}
+          <p class="col-md-8 fs-5 mt-4 text-muted">Results of last 10 tweets</p>
+        {% endif %}
         <form action="/" method="post" class="w-25 mb-3">
         {% csrf_token %}
         {{ form|crispy }}
@@ -56,11 +60,27 @@
           {% endif %}
         </form>
         
-        <ul>
-          {% for tweet in tweets %}
-              <li>{{ tweet.tweet_body }}</li>
+        {% if results %}
+        <table class="table">
+          <thead class="thead-dark">
+            <tr>
+              <th scope="col">#</th>
+              <th scope="col">Tweet Body</th>
+              <th scope="col">Sentiment</th>
+            </tr>
+          </thead>
+          <tbody>
+          
+          {% for result in results %}
+            <tr>
+              <th scope="row">{{ forloop.counter }}</th>
+              <td>{{ result.text }}</td>
+              <td>{{ result.output }}</td>
+            </tr>
           {% endfor %}
-        </ul>
+          </tbody>
+        </table>
+        {% endif %}
       </div>
     </div>
 
