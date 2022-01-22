@@ -58,7 +58,7 @@ def download_tweets(dir, username):
     os.chdir(dir)
     
     from tweety.bot import Twitter
-    tweets = Twitter(str(username)).get_tweets(pages=1).to_dict()
+    tweets = Twitter(str(username)).get_tweets(pages=10).to_dict()
     tweets = tweets['tweets'][0]['result']['tweets']
     tweets = [tweet for tweet in tweets if "https://t.co" not in tweet['tweet_body']]
     tweets = tweets[:-1]
