@@ -15,11 +15,10 @@ RUN python -m pip install scipy --default-timeout=1000
 RUN python -m pip install git+https://github.com/leoyn/social-scraper.git#egg=social_scraper --default-timeout=1000
 RUN python -m pip install django-crispy-forms --default-timeout=1000
 RUN python -m pip install transformers --default-timeout=1000
-RUN python -m pip install torch --default-timeout=1000
 RUN python -m pip install sentencepiece --default-timeout=1000
 RUN python -m pip install protobuf --default-timeout=1000
 RUN python -m pip install tweety-ns --default-timeout=1000
-RUN python -m pip install collections --default-timeout=1000
+RUN python -m pip install torch --default-timeout=1000
 
 # copy project
 COPY . /usr/src/app
