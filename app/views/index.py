@@ -1,5 +1,4 @@
 import os
-import datetime
 import numpy as np
 from app.forms import RunToolForm
 from scipy.special import softmax
@@ -16,7 +15,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # Model Settings
 CUDA = False # set to true if using GPU (Runtime -> Change runtime Type -> GPU)
 BATCH_SIZE = 32
-MODEL = "/usr/src/app/app/twitter-xlm-roberta-base-sentiment"
+MODEL = str(BASE_DIR) + "/twitter-xlm-roberta-base-sentiment"
 tokenizer = AutoTokenizer.from_pretrained(MODEL, use_fast=True, local_files_only=True, model_max_length=512, use_auth_token=True)
 config = AutoConfig.from_pretrained(MODEL, local_files_only=True, use_auth_token=True) # used for id to label name
 model = AutoModelForSequenceClassification.from_pretrained(MODEL, local_files_only=True, use_auth_token=True)
@@ -43,10 +42,10 @@ def index(request):
             username_txt = main_directory + "/" + username + ".txt"
             
             tweets = download_tweets(main_directory, username)
-
             results = sentiment_analysis(username_txt)
+            total_sentiments = sentiment_count(results)
             
-            return render(request,'index.html', {'form_data': form.cleaned_data, 'form_disable': form_disable, 'main_directory': username, 'tweets': tweets, 'results': results})
+            return render(request,'index.html', {'form_data': form.cleaned_data, 'form_disable': form_disable, 'main_directory': username, 'tweets': tweets, 'results': results, 'total_sentiments': total_sentiments})
 
     # if a GET (or any other method) we'll create a blank form
     else:
@@ -63,9 +62,6 @@ def download_tweets(dir, username):
     tweets = [tweet for tweet in tweets if "https://t.co" not in tweet['tweet_body']]
     tweets = tweets[:-1]
     tweets = list(filter(None, tweets))
-    
-    import pandas as pd
-    tweet_series = pd.Series(tweet['tweet_body'] for tweet in tweets)
     
     with open(dir+"/"+str(username)+".txt", 'w', encoding = 'utf-8') as f:
         for tweet in tweets:
@@ -118,5 +114,14 @@ def sentiment_analysis(dataset_path):
       pred = all_preds[index]
       result = {'text': tweet, 'output': config.id2label[pred]}
       results.append(result)
-      
+
     return results
+    
+def sentiment_count(tweets):
+  from collections import Counter
+  c = Counter()
+  for item in tweets:
+      c[item["output"]] += 1
+  
+  c = dict(c)
+  return c
