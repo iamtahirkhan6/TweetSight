@@ -18,7 +18,7 @@ RUN python -m pip install transformers --default-timeout=1000
 RUN python -m pip install sentencepiece --default-timeout=1000
 RUN python -m pip install protobuf --default-timeout=1000
 RUN python -m pip install tweety-ns --default-timeout=1000
-RUN python -m pip install torch --default-timeout=1000
+RUN python -m pip install torch --default-timeout=1000 --no-cache-dir
 
 # copy project
 COPY . /usr/src/app
